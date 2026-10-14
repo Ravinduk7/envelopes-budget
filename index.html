@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0f17" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Envelopes" />
+<meta name="description" content="Offline envelope budgeting in LKR" />
+<title>Envelopes · LKR Budget</title>
+<link rel="manifest" id="app-manifest" />
+<link rel="apple-touch-icon" id="app-touch-icon" />
+<link rel="icon" id="app-favicon" />
+
+<!-- Self-generated PWA manifest + icons (keeps everything in one file) -->
+<script>
+(function () {
+  function makeIcon(size) {
+    var c = document.createElement('canvas'); c.width = c.height = size;
+    var x = c.getContext('2d');
+    x.fillStyle = '#0b0f17'; x.fillRect(0, 0, size, size);
+    var p = size * 0.2, w = size - 2 * p, h = w * 0.7, y = (size - h) / 2, r = size * 0.06;
+    var g = x.createLinearGradient(0, 0, size, size);
+    g.addColorStop(0, '#34d399'); g.addColorStop(1, '#0ea5e9');
+    x.fillStyle = g; x.beginPath();
+    if (x.roundRect) x.roundRect(p, y, w, h, r); else x.rect(p, y, w, h);
+    x.fill();
+    x.strokeStyle = '#0b0f17'; x.lineWidth = size * 0.045; x.lineJoin = 'round'; x.lineCap = 'round';
+    x.beginPath(); x.moveTo(p + size * 0.04, y + size * 0.04); x.lineTo(size / 2, y + h * 0.58); x.lineTo(size - p - size * 0.04, y + size * 0.04); x.stroke();
+    return c.toDataURL('image/png');
+  }
+  try {
+    var i192 = makeIcon(192), i512 = makeIcon(512);
+    var base = location.href.split('#')[0].split('?')[0];
+    var manifest = {
+      name: 'Envelopes – LKR Budget', short_name: 'Envelopes',
+      start_url: base, scope: base.replace(/[^/]*$/, ''),
+      display: 'standalone', orientation: 'portrait',
+      background_color: '#0b0f17', theme_color: '#0b0f17',
+      icons: [
+        { src: i192, sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: i512, sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: i512, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+      ]
+    };
+    document.getElementById('app-manifest').href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+    document.getElementById('app-touch-icon').href = i192;
+    document.getElementById('app-favicon').href = i192;
+  } catch (e) { /* non-fatal */ }
+
+  // Optional service worker (sw.js next to this file) caches the CDN libs for true offline use.
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  }
+})();
+</script>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: { extend: { fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'] } } }
+  };
+</script>
+<style>
+  html, body { background: #0b0f17; color: #e2e8f0; height: 100%; overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; }
+  body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  button, [role="button"] { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  input, select, textarea { font-size: 16px; } /* prevents iOS zoom */
+  .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { scrollbar-width: none; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: none; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop { 0% { transform: translate(-50%, 12px); opacity: 0; } 100% { transform: translate(-50%, 0); opacity: 1; } }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .slide-up { animation: slideUp .28s cubic-bezier(.2,.9,.3,1); }
+  .fade-in { animation: fadeIn .2s ease-out; }
+  .toast-pop { animation: pop .22s ease-out; }
+  .shake { animation: shake .25s ease-in-out 2; }
+  .safe-top { padding-top: max(env(safe-area-inset-top), 12px); }
+  select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px !important; }
+</style>
+
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+</head>
+<body>
+<div id="root">
+  <div style="min-height:100vh;display:grid;place-items:center;color:#64748b;font:500 14px system-ui">
+    <div id="boot-msg">Loading Envelopes…</div>
+  </div>
+</div>
+<script>
+  setTimeout(function () {
+    var m = document.getElementById('boot-msg');
+    if (m && (typeof React === 'undefined' || typeof Babel === 'undefined')) {
+      m.innerHTML = 'Couldn\u2019t load app libraries.<br>Open once while online (served over http/https) so they can be cached for offline use.';
+      m.style.textAlign = 'center'; m.style.padding = '24px';
+    }
+  }, 8000);
+</script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+/* ============================== Utilities ============================== */
+const STORAGE_KEY = 'envelopes-lkr-v1';
+const POOL = 'pool';
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-5);
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+// A budget "month" (period) runs from the 10th to the 9th of the following month.
+// Period key = "YYYY-MM" of the month in which the period STARTS (e.g. 10 Oct – 9 Nov → "2026-10").
+const PERIOD_START_DAY = 10;
+const keyOf = (y, mIdx) => { const d = new Date(y, mIdx, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+const monthKey = (d = new Date()) => keyOf(d.getFullYear(), d.getMonth() - (d.getDate() < PERIOD_START_DAY ? 1 : 0));
+const periodRange = (k) => { const [y, m] = k.split('-').map(Number); return { start: new Date(y, m - 1, PERIOD_START_DAY), end: new Date(y, m, PERIOD_START_DAY - 1) }; };
+const monthLabel = (k) => {
+  const { start, end } = periodRange(k);
+  const s = start.toLocaleDateString('en-GB', start.getFullYear() === end.getFullYear() ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
+  return `${s} – ${end.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+};
+const shiftMonth = (k, delta) => { const [y, m] = k.split('-').map(Number); return keyOf(y, m - 1 + delta); };
+const nf = new Intl.NumberFormat('en-LK', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
+const fmt = (n) => `${n < 0 ? '−' : ''}Rs. ${nf.format(Math.abs(round2(n)))}`;
+const haptic = (ms = 8) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+const sum = (arr, f = (x) => x) => round2(arr.reduce((a, x) => a + (Number(f(x)) || 0), 0));
+const withCommas = (raw) => {
+  if (!raw) return '';
+  const [i, d] = String(raw).split('.');
+  const ii = (i || '0').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return d !== undefined ? `${ii}.${d.slice(0, 2)}` : ii;
+};
+
+const EMOJIS = ['🚌','🏠','🛒','💡','💰','🍛','📱','⛽','🏥','🎓','👕','🎉','✈️','🎁','🐶','🍼','🏋️','🛠️','💳','🧾','🙏','☕','🎮','🚗'];
+const COLORS = { emerald: '#10b981', sky: '#0ea5e9', violet: '#8b5cf6', amber: '#f59e0b', rose: '#f43f5e', teal: '#14b8a6', fuchsia: '#d946ef', lime: '#84cc16', orange: '#f97316', indigo: '#6366f1' };
+const INCOME_KINDS = [ { id: 'Salary', emoji: '💼' }, { id: 'Side income', emoji: '🪙' }, { id: 'Gift', emoji: '🎁' }, { id: 'Other', emoji: '➕' } ];
+
+const defaultState = () => ({
+  version: 1,
+  unallocated: 0,
+  zones: [
+    { id: uid(), name: 'Commute', emoji: '🚌', preset: 20000, balance: 0, kind: 'spending', color: 'sky' },
+    { id: uid(), name: 'Home', emoji: '🏠', preset: 20000, balance: 0, kind: 'spending', color: 'violet' },
+    { id: uid(), name: 'Groceries', emoji: '🛒', preset: 30000, balance: 0, kind: 'spending', color: 'amber' },
+    { id: uid(), name: 'Bills', emoji: '💡', preset: 15000, balance: 0, kind: 'spending', color: 'rose' },
+    { id: uid(), name: 'Savings', emoji: '💰', preset: 25000, balance: 0, kind: 'savings', color: 'emerald' },
+  ],
+  txs: [],
+  lastRolloverMonth: monthKey(),
+  settings: { defaultSweepTarget: null, lastBackup: null },
+});
+
+function normalize(raw) {
+  const d = raw && raw.data && raw.data.zones ? raw.data : raw;
+  if (!d || !Array.isArray(d.zones)) throw new Error('Not a valid Envelopes backup');
+  return {
+    version: 1,
+    unallocated: round2(d.unallocated),
+    zones: d.zones.filter(z => z && z.id && z.name).map(z => ({
+      id: String(z.id), name: String(z.name).slice(0, 40), emoji: z.emoji || '💼',
+      preset: Math.max(0, round2(z.preset)), balance: round2(z.balance),
+      kind: z.kind === 'savings' ? 'savings' : 'spending', color: COLORS[z.color] ? z.color : 'sky',
+    })),
+    txs: Array.isArray(d.txs) ? d.txs.filter(t => t && t.id && Number(t.amount) > 0).map(t => (t.ts ? { ...t, month: monthKey(new Date(t.ts)) } : t)) : [],
+    lastRolloverMonth: typeof d.lastRolloverMonth === 'string' ? d.lastRolloverMonth : monthKey(),
+    settings: { defaultSweepTarget: null, lastBackup: null, ...(d.settings || {}) },
+  };
+}
+function loadState() {
+  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) return normalize(JSON.parse(raw)); } catch (e) { console.warn(e); }
+  return defaultState();
+}
+
+/* ======================= Ledger engine (pure) ======================= */
+// Every money movement is { from, to, amount }. from/to = zoneId | POOL | null (outside world).
+function applyMove(state, from, to, amt) {
+  let unallocated = state.unallocated;
+  if (from === POOL) unallocated -= amt;
+  if (to === POOL) unallocated += amt;
+  const zones = state.zones.map(z => {
+    let b = z.balance;
+    if (z.id === from) b -= amt;
+    if (z.id === to) b += amt;
+    return b === z.balance ? z : { ...z, balance: round2(b) };
+  });
+  return { ...state, zones, unallocated: round2(unallocated) };
+}
+const labelOf = (state, id) => id === POOL ? 'Unallocated' : id == null ? null : (state.zones.find(z => z.id === id)?.name ?? 'Deleted zone');
+
+function record(state, entries) {
+  let s = state; const added = [];
+  for (const e of entries) {
+    const amount = round2(e.amount);
+    if (!(amount > 0)) continue;
+    s = applyMove(s, e.from ?? null, e.to ?? null, amount);
+    added.push({ id: uid(), ts: Date.now(), month: monthKey(), note: '', ...e, amount, fromLabel: labelOf(state, e.from), toLabel: labelOf(state, e.to) });
+  }
+  return { ...s, txs: [...added.reverse(), ...s.txs].slice(0, 10000) };
+}
+function undoTxs(state, ids) {
+  const set = new Set(ids); let s = state;
+  for (const t of state.txs) if (set.has(t.id)) s = applyMove(s, t.to ?? null, t.from ?? null, t.amount);
+  return { ...s, txs: s.txs.filter(t => !set.has(t.id)) };
+}
+
+// Spending zones top up to their preset; savings zones receive their preset once per month.
+function planAutoFund(state) {
+  const mk = monthKey(); let avail = state.unallocated; const plan = []; let totalNeed = 0;
+  for (const z of state.zones) {
+    if (!(z.preset > 0)) continue;
+    let need;
+    if (z.kind === 'savings') {
+      const funded = sum(state.txs.filter(t => t.type === 'fund' && t.to === z.id && t.month === mk), t => t.amount);
+      need = z.preset - funded;
+    } else need = z.preset - z.balance;
+    need = Math.max(0, round2(need));
+    if (need <= 0) continue;
+    totalNeed += need;
+    if (avail <= 0) continue;
+    const amount = round2(Math.min(need, avail)); avail = round2(avail - amount);
+    plan.push({ zone: z, amount, need, partial: amount < need });
+  }
+  const funded = sum(plan, p => p.amount);
+  return { plan, totalNeed: round2(totalNeed), funded, shortfall: round2(totalNeed - funded) };
+}
+const fundEntries = (s, batch) => {
+  const r = planAutoFund(s);
+  return { ...r, entries: r.plan.map(p => ({ type: 'fund', amount: p.amount, from: POOL, to: p.zone.id, batch, note: p.partial ? 'Auto-fund (partial)' : 'Auto-fund' })) };
+};
+
+/* ============================== UI atoms ============================== */
+const Icon = ({ d, className = 'w-6 h-6', children }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {d ? <path d={d} /> : children}
+  </svg>
+);
+const Icons = {
+  home: <Icon d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
+  history: <Icon><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></Icon>,
+  zones: <Icon><rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" /><rect x="3" y="14" width="7" height="7" rx="2" /><rect x="14" y="14" width="7" height="7" rx="2" /></Icon>,
+  settings: <Icon><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></Icon>,
+  bolt: <Icon className="w-5 h-5" d="M13 2L4 14h7l-1 8 9-12h-7z" />,
+  plus: <Icon className="w-5 h-5" d="M12 5v14M5 12h14" />,
+  back: <Icon className="w-6 h-6" d="M21 12H9m0 0l4-4m-4 4l4 4M3 5v14" />,
+  check: <Icon className="w-7 h-7" d="M5 13l4 4L19 7" />,
+  chevL: <Icon className="w-5 h-5" d="M15 18l-6-6 6-6" />,
+  chevR: <Icon className="w-5 h-5" d="M9 18l6-6-6-6" />,
+  swap: <Icon className="w-5 h-5" d="M7 7h13l-4-4M17 17H4l4 4" />,
+  moon: <Icon className="w-5 h-5" d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" />,
+};
+
+function Sheet({ title, onClose, children }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm fade-in" onClick={onClose} />
+      <div className="relative w-full max-w-md max-h-[92vh] flex flex-col rounded-t-3xl bg-slate-900 border-t border-slate-800 shadow-2xl slide-up" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="pt-2.5 pb-1 grid place-items-center"><div className="w-10 h-1.5 rounded-full bg-slate-700" /></div>
+        {title && (
+          <div className="px-5 pt-1 pb-3 flex items-center justify-between gap-3">
+            <h2 className="text-lg font-bold text-white">{title}</h2>
+            <button onClick={onClose} aria-label="Close" className="w-10 h-10 shrink-0 rounded-full bg-slate-800 grid place-items-center text-slate-400 active:bg-slate-700">✕</button>
+          </div>
+        )}
+        <div className="overflow-y-auto overscroll-contain px-5 pb-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function AmountField({ value, onChange, autoFocus, placeholder }) {
+  return (
+    <div className="flex items-center gap-2 rounded-2xl bg-slate-800 px-4 py-3 focus-within:ring-2 ring-emerald-500">
+      <span className="text-slate-400 font-semibold">Rs.</span>
+      <input
+        inputMode="decimal" autoFocus={autoFocus} placeholder={placeholder || '0'} value={withCommas(value)}
+        onChange={(e) => { let v = e.target.value.replace(/[^\d.]/g, ''); const p = v.split('.'); if (p.length > 2) v = p[0] + '.' + p.slice(1).join(''); if (v.replace('.', '').length <= 11) onChange(v); }}
+        className="bg-transparent flex-1 w-0 text-2xl font-bold text-white outline-none tabular-nums placeholder:text-slate-600"
+      />
+    </div>
+  );
+}
+
+const Btn = ({ children, onClick, tone = 'slate', className = '', disabled, ...rest }) => {
+  const tones = {
+    emerald: 'bg-emerald-500 text-emerald-950 active:bg-emerald-400',
+    sky: 'bg-sky-500 text-sky-950 active:bg-sky-400',
+    amber: 'bg-amber-500/15 text-amber-300 border border-amber-500/30 active:bg-amber-500/25',
+    rose: 'bg-rose-500/15 text-rose-300 border border-rose-500/30 active:bg-rose-500/25',
+    slate: 'bg-slate-800 text-slate-100 active:bg-slate-700',
+    ghost: 'bg-transparent text-slate-400 active:bg-slate-800',
+  };
+  return (
+    <button onClick={onClick} disabled={disabled} {...rest}
+      className={`min-h-[52px] px-4 rounded-2xl font-semibold transition active:scale-[.98] disabled:opacity-40 disabled:active:scale-100 ${tones[tone]} ${className}`}>
+      {children}
+    </button>
+  );
+};
+
+const zoneHex = (z) => COLORS[z?.color] || COLORS.sky;
+
+function ZonePicker({ zones, value, onChange, includePool, exclude }) {
+  const opts = [...(includePool ? [{ id: POOL, name: 'Unallocated', emoji: '📥' }] : []), ...zones].filter(o => o.id !== exclude);
+  return (
+    <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5 pb-1">
+      {opts.map(o => (
+        <button key={o.id} onClick={() => { haptic(); onChange(o.id); }}
+          className={`shrink-0 flex items-center gap-1.5 h-11 px-3.5 rounded-full text-sm font-semibold border transition ${value === o.id ? 'bg-emerald-500 text-emerald-950 border-emerald-400' : 'bg-slate-800 text-slate-200 border-slate-700'}`}>
+          <span>{o.emoji}</span>{o.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ============================== Quick Expense ============================== */
+function QuickExpense({ zones, selected, onSelect, amount, setAmount, note, setNote, onSpend, collapsed, setCollapsed, shakeKey }) {
+  const [showNote, setShowNote] = useState(false);
+  const zone = zones.find(z => z.id === selected);
+  const amt = Number(amount) || 0;
+  const after = zone ? round2(zone.balance - amt) : null;
+  const press = (k) => {
+    haptic(6);
+    if (k === 'del') setAmount(a => a.slice(0, -1));
+    else if (k === 'clr') setAmount('');
+    else setAmount(a => { const n = (a + k).replace(/^0+/, ''); return n.length > 9 ? a : n; });
+  };
+  const Key = ({ k, label, className = '' }) => (
+    <button onClick={() => press(k)} className={`h-12 rounded-2xl bg-slate-800 active:bg-slate-700 text-xl font-semibold text-white transition active:scale-95 ${className}`}>{label ?? k}</button>
+  );
+  const ready = zone && amt > 0;
+
+  return (
+    <div className="fixed inset-x-0 z-30 flex justify-center pointer-events-none" style={{ bottom: 'calc(64px + env(safe-area-inset-bottom))' }}>
+      <div className="w-full max-w-md pointer-events-auto rounded-t-3xl bg-slate-900/95 backdrop-blur-xl border-t border-x border-slate-800 shadow-[0_-12px_40px_rgba(0,0,0,.5)]">
+        <button onClick={() => { haptic(); setCollapsed(!collapsed); }} className="w-full pt-2 pb-1 grid place-items-center" aria-label="Toggle quick expense">
+          <div className="w-10 h-1.5 rounded-full bg-slate-700" />
+        </button>
+
+        {collapsed ? (
+          <button onClick={() => setCollapsed(false)} className="w-full px-5 pb-3 pt-1 flex items-center justify-between">
+            <span className="text-sm font-semibold text-slate-300">⚡ Quick Expense</span>
+            <span className="text-sm text-slate-500">{zone ? `${zone.emoji} ${zone.name}` : 'Tap to open'}</span>
+          </button>
+        ) : (
+          <div className="px-4 pb-3">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-2">
+              {zones.map(z => (
+                <button key={z.id} onClick={() => { haptic(); onSelect(z.id); }}
+                  className={`shrink-0 flex items-center gap-1.5 h-10 px-3 rounded-full text-sm font-semibold border transition ${selected === z.id ? 'text-slate-950 border-transparent' : 'bg-slate-800/80 text-slate-300 border-slate-700'}`}
+                  style={selected === z.id ? { background: zoneHex(z) } : null}>
+                  <span>{z.emoji}</span>{z.name}
+                </button>
+              ))}
+            </div>
+
+            <div key={shakeKey} className={`flex items-end justify-between gap-3 px-1 pb-2 ${shakeKey ? 'shake' : ''}`}>
+              <div className="min-w-0">
+                <div className={`text-3xl font-extrabold tabular-nums tracking-tight ${amt ? 'text-white' : 'text-slate-600'}`}>Rs. {amt ? nf.format(amt) : '0'}</div>
+                <div className="text-xs h-4 mt-0.5 truncate">
+                  {zone ? (
+                    amt ? <span className={after < 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'}>{zone.name} → {fmt(after)}{after < 0 ? ' (overdraft)' : ''}</span>
+                        : <span className="text-slate-500">{zone.emoji} {zone.name} · {fmt(zone.balance)} left</span>
+                  ) : <span className="text-amber-400">Pick a zone above</span>}
+                </div>
+              </div>
+              <button onClick={() => setShowNote(s => !s)} className={`shrink-0 h-10 px-3 rounded-xl text-sm font-medium ${note ? 'bg-sky-500/20 text-sky-300' : 'bg-slate-800 text-slate-400'}`}>
+                📝 {note ? 'Note ✓' : 'Note'}
+              </button>
+            </div>
+            {showNote && (
+              <input value={note} onChange={e => setNote(e.target.value)} placeholder="What was it for? (optional)" maxLength={60}
+                className="w-full mb-2 h-11 rounded-xl bg-slate-800 px-3 text-white placeholder:text-slate-500 outline-none focus:ring-2 ring-sky-500" />
+            )}
+
+            <div className="grid grid-cols-4 gap-2">
+              <Key k="1" /><Key k="2" /><Key k="3" />
+              <Key k="del" label="⌫" className="text-slate-300" />
+              <Key k="4" /><Key k="5" /><Key k="6" />
+              <Key k="clr" label="C" className="text-rose-300" />
+              <Key k="7" /><Key k="8" /><Key k="9" />
+              <button onClick={onSpend}
+                className={`row-span-2 rounded-2xl font-bold flex flex-col items-center justify-center gap-0.5 transition active:scale-95 ${ready ? (after < 0 ? 'bg-amber-500 text-amber-950' : 'bg-emerald-500 text-emerald-950') : 'bg-slate-800 text-slate-500'}`}>
+                {Icons.check}<span className="text-sm">Spend</span>
+              </button>
+              <Key k="00" /><Key k="0" /><Key k="000" className="text-base" />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================== Home ============================== */
+function ZoneCard({ z, spent, selected, onTap }) {
+  const hex = zoneHex(z);
+  const pct = z.preset > 0 ? Math.max(0, Math.min(100, (z.balance / z.preset) * 100)) : (z.balance > 0 ? 100 : 0);
+  return (
+    <button onClick={onTap}
+      className={`text-left rounded-2xl p-3 bg-slate-900 border transition active:scale-[.97] ${selected ? 'border-transparent' : 'border-slate-800'}`}
+      style={selected ? { boxShadow: `0 0 0 2px ${hex}` } : null}>
+      <div className="flex items-center gap-2">
+        <span className="text-lg w-9 h-9 shrink-0 grid place-items-center rounded-xl" style={{ background: hex + '26' }}>{z.emoji}</span>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-white truncate">{z.name}</div>
+          <div className="text-[11px] text-slate-500 truncate">{z.kind === 'savings' ? '🔒 Savings' : `Spent ${fmt(spent)}`}</div>
+        </div>
+      </div>
+      <div className={`mt-2 text-lg font-bold tabular-nums tracking-tight ${z.balance < 0 ? 'text-rose-400' : 'text-white'}`}>{fmt(z.balance)}</div>
+      <div className="mt-1.5 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-500" style={{ width: (z.balance < 0 ? 100 : pct) + '%', background: z.balance < 0 ? '#f43f5e' : hex }} />
+      </div>
+      <div className="mt-1 text-[11px] text-slate-500 truncate">{z.preset > 0 ? `${z.kind === 'savings' ? 'Monthly' : 'Preset'} ${fmt(z.preset)}` : 'No preset'}</div>
+    </button>
+  );
+}
+
+function HomeTab({ state, selected, onSelectZone, onIncome, onAutoFund, onRollover, spentByZone, collapsed }) {
+  const mk = monthKey();
+  const now = new Date();
+  // Period ends on the 9th → banner only on the 8th (1 day left) and 9th (0 days left).
+  const daysLeft = (PERIOD_START_DAY - 1) - now.getDate();
+  const hasLeftover = state.zones.some(z => z.kind === 'spending' && z.balance > 0);
+  const showBanner = (daysLeft === 0 || daysLeft === 1) && hasLeftover;
+  const inZones = sum(state.zones, z => z.balance);
+  const spentMonth = sum(Object.values(spentByZone));
+  const plan = useMemo(() => planAutoFund(state), [state]);
+
+  return (
+    <div className="px-4 safe-top" style={{ paddingBottom: collapsed ? 'calc(150px + env(safe-area-inset-bottom))' : 'calc(400px + env(safe-area-inset-bottom))' }}>
+      <header className="flex items-center justify-between pb-3">
+        <div>
+          <div className="text-xs uppercase tracking-widest text-slate-500 font-semibold">Envelopes</div>
+          <div className="text-lg font-bold text-white">{monthLabel(mk)}</div>
+        </div>
+        <button onClick={onIncome} className="h-11 px-4 rounded-full bg-slate-800 text-emerald-300 font-semibold flex items-center gap-1.5 active:bg-slate-700">{Icons.plus}Income</button>
+      </header>
+
+      {/* Unallocated pool */}
+      <section className="rounded-3xl p-5 bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-sky-500/10 border border-emerald-500/20">
+        <div className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80">Unallocated pool</div>
+        <div className={`mt-1 text-4xl font-extrabold tabular-nums tracking-tight ${state.unallocated < 0 ? 'text-rose-400' : 'text-white'}`}>{fmt(state.unallocated)}</div>
+        <div className="mt-1 text-xs text-slate-400">
+          {plan.totalNeed > 0 ? <>Zones need <span className="text-slate-200 font-semibold">{fmt(plan.totalNeed)}</span> to hit presets{plan.shortfall > 0 && state.unallocated > 0 ? ` · ${fmt(plan.shortfall)} short` : ''}</> : 'All zones funded to preset ✓'}
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Btn tone="slate" onClick={onIncome} className="flex items-center justify-center gap-1.5 bg-slate-900/70">💵 Log income</Btn>
+          <Btn tone="emerald" onClick={onAutoFund} disabled={plan.plan.length === 0} className="flex items-center justify-center gap-1.5">{Icons.bolt}Auto-Fund</Btn>
+        </div>
+      </section>
+
+      {showBanner && (
+        <button onClick={onRollover} className="mt-3 w-full text-left rounded-2xl p-4 bg-indigo-500/15 border border-indigo-500/30 flex items-center gap-3 active:bg-indigo-500/25">
+          <span className="w-10 h-10 grid place-items-center rounded-xl bg-indigo-500/25 text-indigo-200">{Icons.moon}</span>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-indigo-100">Budget month ends {daysLeft === 0 ? 'today' : 'tomorrow'}</div>
+            <div className="text-xs text-indigo-200/70">Review leftovers &amp; sweep them into Savings</div>
+          </div>
+          {Icons.chevR}
+        </button>
+      )}
+
+      <div className="mt-4 grid grid-cols-2 gap-2 text-center">
+        <div className="rounded-2xl bg-slate-900 border border-slate-800 py-2.5">
+          <div className="text-[11px] text-slate-500 uppercase tracking-wide">In zones</div>
+          <div className="font-bold tabular-nums text-white">{fmt(inZones)}</div>
+        </div>
+        <div className="rounded-2xl bg-slate-900 border border-slate-800 py-2.5">
+          <div className="text-[11px] text-slate-500 uppercase tracking-wide">Spent this month</div>
+          <div className="font-bold tabular-nums text-rose-300">{fmt(spentMonth)}</div>
+        </div>
+      </div>
+
+      <div className="mt-5 mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Zones</h3>
+        <span className="text-xs text-slate-500">Tap to select for expense</span>
+      </div>
+      {state.zones.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-700 p-6 text-center text-slate-500">No zones yet — create one in the Zones tab.</div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2.5">
+          {state.zones.map(z => <ZoneCard key={z.id} z={z} spent={spentByZone[z.id] || 0} selected={selected === z.id} onTap={() => onSelectZone(z.id)} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================== History ============================== */
+const txMeta = (t, zones) => {
+  const z = zones.find(z => z.id === (t.type === 'expense' ? t.from : t.to));
+  switch (t.type) {
+    case 'income': return { icon: (INCOME_KINDS.find(k => k.id === t.category) || INCOME_KINDS[3]).emoji, title: t.note || t.category || 'Income', sub: `${t.category || 'Income'} → Unallocated`, sign: '+', cls: 'text-emerald-400' };
+    case 'expense': return { icon: z?.emoji || '🧾', title: t.note || t.fromLabel, sub: t.fromLabel, sign: '−', cls: 'text-rose-300' };
+    case 'fund': return { icon: '⚡', title: `Funded ${t.toLabel}`, sub: t.note || 'From Unallocated', sign: '', cls: 'text-sky-300' };
+    case 'sweep': return { icon: '🌙', title: `Swept ${t.fromLabel}`, sub: `→ ${t.toLabel}`, sign: '', cls: 'text-indigo-300' };
+    case 'close': return { icon: '🗑️', title: `Closed zone`, sub: `${t.fromLabel} → ${t.toLabel}`, sign: '', cls: 'text-slate-400' };
+    default: return { icon: '↔️', title: `${t.fromLabel} → ${t.toLabel}`, sub: t.note || 'Transfer', sign: '', cls: 'text-slate-200' };
+  }
+};
+
+function HistoryTab({ state, onUndo }) {
+  const [month, setMonth] = useState(monthKey());
+  const [filter, setFilter] = useState('all');
+  const monthTx = state.txs.filter(t => t.month === month);
+  const list = monthTx.filter(t => filter === 'all' || (filter === 'moves' ? ['fund', 'sweep', 'transfer', 'close'].includes(t.type) : t.type === filter));
+  const income = sum(monthTx.filter(t => t.type === 'income'), t => t.amount);
+  const spent = sum(monthTx.filter(t => t.type === 'expense'), t => t.amount);
+  const groups = [];
+  for (const t of list) {
+    const d = new Date(t.ts); const key = d.toDateString();
+    let g = groups[groups.length - 1];
+    if (!g || g.key !== key) { g = { key, date: d, items: [] }; groups.push(g); }
+    g.items.push(t);
+  }
+  const today = new Date().toDateString(), yest = new Date(Date.now() - 864e5).toDateString();
+  const dayLabel = (g) => g.key === today ? 'Today' : g.key === yest ? 'Yesterday' : g.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+  return (
+    <div className="px-4 safe-top pb-28">
+      <div className="flex items-center justify-between pb-3">
+        <button onClick={() => setMonth(shiftMonth(month, -1))} className="w-11 h-11 rounded-full bg-slate-800 grid place-items-center text-slate-300 active:bg-slate-700">{Icons.chevL}</button>
+        <div className="text-lg font-bold text-white">{monthLabel(month)}</div>
+        <button onClick={() => setMonth(shiftMonth(month, 1))} disabled={month >= monthKey()} className="w-11 h-11 rounded-full bg-slate-800 grid place-items-center text-slate-300 active:bg-slate-700 disabled:opacity-30">{Icons.chevR}</button>
+      </div>
+      <div className="grid grid-cols-3 gap-2 text-center">
+        {[['Income', income, 'text-emerald-400'], ['Spent', spent, 'text-rose-300'], ['Net', income - spent, income - spent < 0 ? 'text-rose-400' : 'text-white']].map(([l, v, c]) => (
+          <div key={l} className="rounded-2xl bg-slate-900 border border-slate-800 py-2.5 px-1">
+            <div className="text-[11px] text-slate-500 uppercase tracking-wide">{l}</div>
+            <div className={`text-sm font-bold tabular-nums ${c}`}>{fmt(v)}</div>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 py-3">
+        {[['all', 'All'], ['expense', 'Expenses'], ['income', 'Income'], ['moves', 'Funding & moves']].map(([id, l]) => (
+          <button key={id} onClick={() => setFilter(id)} className={`shrink-0 h-10 px-4 rounded-full text-sm font-semibold ${filter === id ? 'bg-white text-slate-900' : 'bg-slate-800 text-slate-300'}`}>{l}</button>
+        ))}
+      </div>
+      {groups.length === 0 && <div className="text-center text-slate-500 py-16">No transactions</div>}
+      {groups.map(g => (
+        <div key={g.key} className="mb-4">
+          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 px-1">{dayLabel(g)}</div>
+          <div className="rounded-2xl bg-slate-900 border border-slate-800 divide-y divide-slate-800 overflow-hidden">
+            {g.items.map(t => {
+              const m = txMeta(t, state.zones);
+              return (
+                <button key={t.id} onClick={() => onUndo(t)} className="w-full flex items-center gap-3 px-3.5 py-3 text-left active:bg-slate-800">
+                  <span className="w-10 h-10 shrink-0 grid place-items-center rounded-xl bg-slate-800 text-lg">{m.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-white truncate">{m.title}</div>
+                    <div className="text-xs text-slate-500 truncate">{m.sub} · {new Date(t.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                  <div className={`text-sm font-bold tabular-nums ${m.cls}`}>{m.sign}{fmt(t.amount)}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      {list.length > 0 && <p className="text-center text-xs text-slate-600 mt-2">Tap a transaction to undo it</p>}
+    </div>
+  );
+}
+
+/* ============================== Zones ============================== */
+function ZonesTab({ state, onEdit, onNew, onMove, onTransfer }) {
+  const presetTotal = sum(state.zones, z => z.preset);
+  const lastSalary = state.txs.find(t => t.type === 'income' && t.category === 'Salary');
+  return (
+    <div className="px-4 safe-top pb-28">
+      <div className="flex items-center justify-between pb-3">
+        <h1 className="text-2xl font-bold text-white">Zones</h1>
+        <button onClick={onTransfer} className="h-11 px-4 rounded-full bg-slate-800 text-slate-200 font-semibold flex items-center gap-1.5 active:bg-slate-700">{Icons.swap}Move money</button>
+      </div>
+      <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4 mb-4">
+        <div className="flex justify-between text-sm"><span className="text-slate-400">Monthly presets total</span><span className="font-bold text-white tabular-nums">{fmt(presetTotal)}</span></div>
+        {lastSalary && (
+          <div className="flex justify-between text-sm mt-1.5"><span className="text-slate-400">Last salary</span>
+            <span className={`font-semibold tabular-nums ${lastSalary.amount >= presetTotal ? 'text-emerald-400' : 'text-amber-400'}`}>{fmt(lastSalary.amount)}</span></div>
+        )}
+        {lastSalary && <div className="text-xs mt-1.5 text-slate-500">{lastSalary.amount >= presetTotal ? `Salary covers presets with ${fmt(lastSalary.amount - presetTotal)} spare` : `Presets exceed salary by ${fmt(presetTotal - lastSalary.amount)}`}</div>}
+      </div>
+      <div className="space-y-2">
+        {state.zones.map((z, i) => (
+          <div key={z.id} className="flex items-center gap-2 rounded-2xl bg-slate-900 border border-slate-800 p-2 pl-3">
+            <button onClick={() => onEdit(z)} className="flex-1 flex items-center gap-3 min-w-0 text-left py-1 active:opacity-70">
+              <span className="w-11 h-11 shrink-0 grid place-items-center rounded-xl text-xl" style={{ background: zoneHex(z) + '26' }}>{z.emoji}</span>
+              <div className="min-w-0">
+                <div className="font-semibold text-white truncate">{z.name} {z.kind === 'savings' && <span className="ml-1 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 align-middle">Savings</span>}</div>
+                <div className="text-xs text-slate-500 tabular-nums">Preset {fmt(z.preset)} · Bal <span className={z.balance < 0 ? 'text-rose-400' : 'text-slate-300'}>{fmt(z.balance)}</span></div>
+              </div>
+            </button>
+            <div className="flex flex-col gap-1">
+              <button disabled={i === 0} onClick={() => onMove(i, -1)} className="w-9 h-8 rounded-lg bg-slate-800 text-slate-400 disabled:opacity-20 active:bg-slate-700">▲</button>
+              <button disabled={i === state.zones.length - 1} onClick={() => onMove(i, 1)} className="w-9 h-8 rounded-lg bg-slate-800 text-slate-400 disabled:opacity-20 active:bg-slate-700">▼</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <Btn tone="emerald" onClick={onNew} className="w-full mt-4 flex items-center justify-center gap-2">{Icons.plus}New zone</Btn>
+      <p className="text-xs text-slate-500 mt-3 leading-relaxed px-1">
+        <b className="text-slate-400">Auto-Fund rules:</b> spending zones are topped up to their preset; savings zones receive their preset once per month. Zones are funded top-to-bottom, so order = priority.
+      </p>
+    </div>
+  );
+}
+
+function ZoneSheet({ zone, onSave, onDelete, onClose }) {
+  const [name, setName] = useState(zone?.name || '');
+  const [emoji, setEmoji] = useState(zone?.emoji || '💼');
+  const [color, setColor] = useState(zone?.color || 'sky');
+  const [preset, setPreset] = useState(zone ? String(zone.preset || '') : '');
+  const [kind, setKind] = useState(zone?.kind || 'spending');
+  const valid = name.trim().length > 0;
+  return (
+    <Sheet title={zone ? 'Edit zone' : 'New zone'} onClose={onClose}>
+      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Name</label>
+      <input value={name} onChange={e => setName(e.target.value)} maxLength={30} placeholder="e.g. Commute"
+        className="mt-1.5 w-full h-12 rounded-2xl bg-slate-800 px-4 text-white outline-none focus:ring-2 ring-emerald-500 placeholder:text-slate-500" />
+      <label className="block mt-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Monthly preset</label>
+      <div className="mt-1.5"><AmountField value={preset} onChange={setPreset} /></div>
+      <label className="block mt-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Type</label>
+      <div className="mt-1.5 grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-800">
+        {[['spending', '💸 Spending'], ['savings', '🔒 Savings']].map(([k, l]) => (
+          <button key={k} onClick={() => setKind(k)} className={`h-11 rounded-xl font-semibold text-sm ${kind === k ? 'bg-slate-950 text-white' : 'text-slate-400'}`}>{l}</button>
+        ))}
+      </div>
+      <p className="text-xs text-slate-500 mt-1.5">{kind === 'savings' ? 'Receives month-end sweeps. Auto-Fund adds the preset once per month.' : 'Auto-Fund tops it up to the preset. Leftovers can be swept at month end.'}</p>
+      <label className="block mt-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Icon</label>
+      <div className="mt-1.5 grid grid-cols-8 gap-1.5">
+        {EMOJIS.map(e => <button key={e} onClick={() => setEmoji(e)} className={`h-10 rounded-xl text-xl ${emoji === e ? 'bg-slate-700 ring-2 ring-emerald-500' : 'bg-slate-800'}`}>{e}</button>)}
+      </div>
+      <label className="block mt-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Colour</label>
+      <div className="mt-1.5 flex flex-wrap gap-2.5">
+        {Object.entries(COLORS).map(([k, hex]) => <button key={k} onClick={() => setColor(k)} aria-label={k} className="w-9 h-9 rounded-full" style={{ background: hex, boxShadow: color === k ? `0 0 0 3px #0f172a, 0 0 0 5px ${hex}` : 'none' }} />)}
+      </div>
+      <div className="mt-6 grid gap-2">
+        <Btn tone="emerald" disabled={!valid} onClick={() => onSave({ name: name.trim(), emoji, color, preset: Math.max(0, round2(preset)), kind })}>{zone ? 'Save changes' : 'Create zone'}</Btn>
+        {zone && <Btn tone="rose" onClick={() => onDelete(zone)}>Delete zone{zone.balance ? ` (balance → Unallocated)` : ''}</Btn>}
+      </div>
+    </Sheet>
+  );
+}
+
+/* ============================== Sheets ============================== */
+function IncomeSheet({ onAdd, onClose }) {
+  const [amount, setAmount] = useState('');
+  const [kind, setKind] = useState('Salary');
+  const [note, setNote] = useState('');
+  const amt = round2(amount);
+  return (
+    <Sheet title="Log income" onClose={onClose}>
+      <AmountField value={amount} onChange={setAmount} autoFocus />
+      <div className="mt-3 grid grid-cols-4 gap-2">
+        {INCOME_KINDS.map(k => (
+          <button key={k.id} onClick={() => setKind(k.id)} className={`h-16 rounded-2xl text-xs font-semibold flex flex-col items-center justify-center gap-1 border ${kind === k.id ? 'bg-emerald-500/15 border-emerald-500 text-emerald-200' : 'bg-slate-800 border-transparent text-slate-300'}`}>
+            <span className="text-xl">{k.emoji}</span>{k.id}
+          </button>
+        ))}
+      </div>
+      <input value={note} onChange={e => setNote(e.target.value)} placeholder="Note (e.g. Fiverr gig, October salary)" maxLength={60}
+        className="mt-3 w-full h-12 rounded-2xl bg-slate-800 px-4 text-white outline-none focus:ring-2 ring-emerald-500 placeholder:text-slate-500" />
+      <div className="mt-5 grid gap-2">
+        <Btn tone="emerald" disabled={!(amt > 0)} onClick={() => onAdd(amt, kind, note.trim(), true)} className="flex items-center justify-center gap-1.5">{Icons.bolt}Add & Auto-Fund zones</Btn>
+        <Btn tone="slate" disabled={!(amt > 0)} onClick={() => onAdd(amt, kind, note.trim(), false)}>Add to Unallocated only</Btn>
+      </div>
+    </Sheet>
+  );
+}
+
+function OverdraftSheet({ state, data, onResolve, onClose }) {
+  const zone = state.zones.find(z => z.id === data.zoneId);
+  if (!zone) return null;
+  const shortfall = round2(data.amount - zone.balance);
+  const donors = state.zones.filter(z => z.id !== zone.id && z.balance >= shortfall);
+  const poolOk = state.unallocated >= shortfall;
+  return (
+    <Sheet title="⚠️ Overdraft" onClose={onClose}>
+      <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4">
+        <div className="text-sm text-amber-100 leading-relaxed">
+          Spending <b>{fmt(data.amount)}</b> from {zone.emoji} <b>{zone.name}</b> (balance {fmt(zone.balance)}) would put it at <b className="text-rose-300">{fmt(zone.balance - data.amount)}</b>.
+        </div>
+        <div className="mt-1 text-xs text-amber-200/70">Cover the {fmt(shortfall)} shortfall?</div>
+      </div>
+      <div className="mt-4 grid gap-2">
+        <Btn tone="emerald" disabled={!poolOk} onClick={() => onResolve(POOL, shortfall)} className="text-left flex items-center justify-between">
+          <span>📥 Cover from Unallocated</span><span className="text-sm opacity-80 tabular-nums">{poolOk ? fmt(shortfall) : `only ${fmt(state.unallocated)}`}</span>
+        </Btn>
+      </div>
+      {donors.length > 0 && (
+        <>
+          <div className="mt-4 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Or pull from another zone</div>
+          <div className="grid gap-2">
+            {donors.map(d => (
+              <Btn key={d.id} onClick={() => onResolve(d.id, shortfall)} className="flex items-center justify-between">
+                <span>{d.emoji} {d.name}</span><span className="text-sm text-slate-400 tabular-nums">{fmt(d.balance)} → {fmt(d.balance - shortfall)}</span>
+              </Btn>
+            ))}
+          </div>
+        </>
+      )}
+      <div className="mt-4 grid gap-2">
+        <Btn tone="amber" onClick={() => onResolve(null, 0)}>Spend anyway (go negative)</Btn>
+        <Btn tone="ghost" onClick={onClose}>Cancel</Btn>
+      </div>
+    </Sheet>
+  );
+}
+
+function TransferSheet({ state, onMove, onClose }) {
+  const [from, setFrom] = useState(POOL);
+  const [to, setTo] = useState(state.zones[0]?.id || POOL);
+  const [amount, setAmount] = useState('');
+  const amt = round2(amount);
+  const fromBal = from === POOL ? state.unallocated : (state.zones.find(z => z.id === from)?.balance ?? 0);
+  const ok = amt > 0 && from !== to && amt <= fromBal;
+  return (
+    <Sheet title="Move money" onClose={onClose}>
+      <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">From · {fmt(fromBal)} available</div>
+      <ZonePicker zones={state.zones} value={from} onChange={(v) => { setFrom(v); if (v === to) setTo(v === POOL ? state.zones[0]?.id : POOL); }} includePool />
+      <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-4 mb-2">To</div>
+      <ZonePicker zones={state.zones} value={to} onChange={setTo} includePool exclude={from} />
+      <div className="mt-4"><AmountField value={amount} onChange={setAmount} /></div>
+      {amt > fromBal && <div className="text-xs text-rose-400 mt-1.5">Not enough in source.</div>}
+      <div className="mt-2 flex gap-2">
+        {fromBal > 0 && <button onClick={() => setAmount(String(fromBal))} className="h-9 px-3 rounded-xl bg-slate-800 text-xs font-semibold text-slate-300">Max {fmt(fromBal)}</button>}
+      </div>
+      <Btn tone="emerald" disabled={!ok} onClick={() => onMove(from, to, amt)} className="w-full mt-4">Move {amt > 0 ? fmt(amt) : ''}</Btn>
+    </Sheet>
+  );
+}
+
+function RolloverSheet({ state, pending, onSweep, onKeep, onClose }) {
+  const leftovers = state.zones.filter(z => z.kind === 'spending' && z.balance > 0);
+  const negatives = state.zones.filter(z => z.balance < 0);
+  const savings = state.zones.filter(z => z.kind === 'savings');
+  const pref = state.settings?.defaultSweepTarget;
+  const defaultT = pref && (pref === POOL || state.zones.some(z => z.id === pref)) ? pref : (savings[0]?.id || POOL);
+  const [globalT, setGlobalT] = useState(defaultT);
+  const [overrides, setOverrides] = useState({});
+  const [excluded, setExcluded] = useState({});
+  const [alsoFund, setAlsoFund] = useState(pending);
+  const targets = [...savings, { id: POOL, name: 'Unallocated', emoji: '📥' }, ...state.zones.filter(z => z.kind !== 'savings')];
+  const targetFor = (z) => { const t = overrides[z.id] ?? globalT; return t === z.id ? POOL : t; };
+  const nameOf = (id) => { const t = targets.find(t => t.id === id); return t ? `${t.emoji} ${t.name}` : '?'; };
+  const total = sum(leftovers, z => z.balance);
+  const chosen = leftovers.filter(z => !excluded[z.id]);
+  const chosenTotal = sum(chosen, z => z.balance);
+  const mk = (list, tf) => list.map(z => ({ type: 'sweep', amount: z.balance, from: z.id, to: tf(z), note: 'Month-end sweep' }));
+  const customised = Object.keys(overrides).length > 0 || Object.keys(excluded).some(k => excluded[k]);
+
+  return (
+    <Sheet title={pending ? `🌙 ${monthLabel(state.lastRolloverMonth)} wrap-up` : '🌙 End-of-month rollover'} onClose={onClose}>
+      {leftovers.length === 0 ? (
+        <div className="rounded-2xl bg-slate-800/60 p-5 text-center">
+          <div className="text-3xl">✨</div>
+          <div className="mt-2 font-semibold text-white">No leftovers to sweep</div>
+          <div className="text-sm text-slate-400">All spending zones are at zero or below.</div>
+        </div>
+      ) : (
+        <>
+          <div className="rounded-2xl bg-gradient-to-br from-indigo-500/20 to-emerald-500/10 border border-indigo-500/25 p-4">
+            <div className="text-xs uppercase tracking-wider font-semibold text-indigo-200/80">Leftover in {leftovers.length} spending zone{leftovers.length > 1 ? 's' : ''}</div>
+            <div className="text-3xl font-extrabold text-white tabular-nums mt-0.5">{fmt(total)}</div>
+          </div>
+
+          <div className="mt-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Sweep into</div>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5 pb-1">
+            {targets.map(t => (
+              <button key={t.id} onClick={() => { haptic(); setGlobalT(t.id); }}
+                className={`shrink-0 h-11 px-3.5 rounded-full text-sm font-semibold border ${globalT === t.id ? 'bg-emerald-500 text-emerald-950 border-emerald-400' : 'bg-slate-800 text-slate-200 border-slate-700'}`}>
+                {t.emoji} {t.name}
+              </button>
+            ))}
+          </div>
+
+          <Btn tone="emerald" onClick={() => onSweep(mk(leftovers, z => (globalT === z.id ? POOL : globalT)), alsoFund)} className="w-full mt-3 text-base">
+            Sweep all {fmt(total)} → {nameOf(globalT)}
+          </Btn>
+
+          <div className="mt-5 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Or fine-tune per zone</div>
+          <div className="rounded-2xl bg-slate-800/50 divide-y divide-slate-800">
+            {leftovers.map(z => (
+              <div key={z.id} className={`flex items-center gap-2.5 p-3 ${excluded[z.id] ? 'opacity-40' : ''}`}>
+                <button onClick={() => setExcluded(e => ({ ...e, [z.id]: !e[z.id] }))}
+                  className={`w-7 h-7 shrink-0 rounded-lg grid place-items-center border-2 ${excluded[z.id] ? 'border-slate-600' : 'bg-emerald-500 border-emerald-500 text-emerald-950'}`}>
+                  {!excluded[z.id] && '✓'}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-white truncate">{z.emoji} {z.name}</div>
+                  <div className="text-xs text-slate-400 tabular-nums">{fmt(z.balance)}</div>
+                </div>
+                <select value={targetFor(z)} onChange={e => setOverrides(o => ({ ...o, [z.id]: e.target.value }))}
+                  className="h-10 max-w-[45%] rounded-xl bg-slate-900 border border-slate-700 pl-3 text-sm text-slate-200 outline-none">
+                  {targets.filter(t => t.id !== z.id).map(t => <option key={t.id} value={t.id}>{t.emoji} {t.name}</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+          {customised && (
+            <Btn tone="sky" disabled={chosen.length === 0} onClick={() => onSweep(mk(chosen, targetFor), alsoFund)} className="w-full mt-3">
+              Sweep selected ({fmt(chosenTotal)})
+            </Btn>
+          )}
+
+          <label className="mt-4 flex items-center gap-3 rounded-2xl bg-slate-800/50 p-3.5">
+            <input type="checkbox" checked={alsoFund} onChange={e => setAlsoFund(e.target.checked)} className="w-5 h-5 accent-emerald-500" />
+            <span className="text-sm text-slate-300">Then Auto-Fund zones for the new month from Unallocated</span>
+          </label>
+        </>
+      )}
+
+      {negatives.length > 0 && (
+        <div className="mt-4 rounded-2xl bg-rose-500/10 border border-rose-500/25 p-3.5 text-sm text-rose-200">
+          Overdrawn: {negatives.map(z => `${z.emoji} ${z.name} (${fmt(z.balance)})`).join(', ')}. Use “Move money” in Zones to cover these.
+        </div>
+      )}
+
+      <div className="mt-4 grid gap-2">
+        <Btn tone="slate" onClick={onKeep}>{leftovers.length ? 'Keep balances (roll over as-is)' : 'Done — start new month'}</Btn>
+        {pending && <Btn tone="ghost" onClick={onClose}>Remind me later</Btn>}
+      </div>
+    </Sheet>
+  );
+}
+
+function ConfirmSheet({ title, body, confirmLabel = 'Confirm', danger, onConfirm, onClose }) {
+  return (
+    <Sheet title={title} onClose={onClose}>
+      <p className="text-slate-300 text-sm leading-relaxed">{body}</p>
+      <div className="mt-5 grid gap-2">
+        <Btn tone={danger ? 'rose' : 'emerald'} onClick={onConfirm}>{confirmLabel}</Btn>
+        <Btn tone="ghost" onClick={onClose}>Cancel</Btn>
+      </div>
+    </Sheet>
+  );
+}
+
+function PasteSheet({ onRestore, onClose }) {
+  const [text, setText] = useState('');
+  return (
+    <Sheet title="Paste backup JSON" onClose={onClose}>
+      <textarea value={text} onChange={e => setText(e.target.value)} rows={8} placeholder='{"app":"envelopes-lkr", ...}'
+        className="w-full rounded-2xl bg-slate-800 p-3 text-xs font-mono text-slate-200 outline-none focus:ring-2 ring-emerald-500" />
+      <Btn tone="emerald" disabled={!text.trim()} onClick={() => onRestore(text)} className="w-full mt-3">Restore</Btn>
+    </Sheet>
+  );
+}
+
+/* ============================== Settings ============================== */
+function SettingsTab({ state, onExport, onShare, onCopy, onImportFile, onPaste, onRollover, onReset, onSetSweep }) {
+  const fileRef = useRef(null);
+  const last = state.settings?.lastBackup;
+  const stale = !last || Date.now() - last > 30 * 864e5;
+  const bytes = new Blob([JSON.stringify(state)]).size;
+  const Row = ({ icon, title, sub, onClick, tone }) => (
+    <button onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-slate-800">
+      <span className="text-xl w-8 text-center">{icon}</span>
+      <div className="flex-1 min-w-0"><div className={`font-semibold ${tone || 'text-white'}`}>{title}</div>{sub && <div className="text-xs text-slate-500">{sub}</div>}</div>
+      <span className="text-slate-600">{Icons.chevR}</span>
+    </button>
+  );
+  const Group = ({ label, children }) => (
+    <div className="mb-5">
+      <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 px-1">{label}</div>
+      <div className="rounded-2xl bg-slate-900 border border-slate-800 divide-y divide-slate-800 overflow-hidden">{children}</div>
+    </div>
+  );
+  const sweepTargets = [{ id: '', name: 'First savings zone', emoji: '💰' }, { id: POOL, name: 'Unallocated', emoji: '📥' }, ...state.zones];
+  return (
+    <div className="px-4 safe-top pb-28">
+      <h1 className="text-2xl font-bold text-white pb-4">Settings</h1>
+      {stale && (
+        <div className="mb-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 p-3.5 text-sm text-amber-200">
+          💾 {last ? `Last backup ${Math.floor((Date.now() - last) / 864e5)} days ago.` : 'No backup yet.'} Data lives only on this device — export a backup regularly.
+        </div>
+      )}
+      <Group label="Backup">
+        <Row icon="⬇️" title="Export JSON backup" sub={last ? `Last: ${new Date(last).toLocaleString('en-GB')}` : 'Download a .json file'} onClick={onExport} />
+        {typeof navigator.share === 'function' && <Row icon="📤" title="Share backup" sub="Send to Drive, WhatsApp, email…" onClick={onShare} />}
+        <Row icon="📋" title="Copy backup to clipboard" onClick={onCopy} />
+      </Group>
+      <Group label="Restore">
+        <Row icon="⬆️" title="Import JSON file" sub="Replaces all current data" onClick={() => fileRef.current?.click()} />
+        <Row icon="📝" title="Paste JSON text" onClick={onPaste} />
+        <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onImportFile(f); }} />
+      </Group>
+      <Group label="Month end">
+        <Row icon="🌙" title="Run rollover now" sub="Sweep leftover balances" onClick={onRollover} />
+        <div className="px-4 py-3.5">
+          <div className="font-semibold text-white mb-2">Default sweep target</div>
+          <select value={state.settings?.defaultSweepTarget || ''} onChange={e => onSetSweep(e.target.value || null)}
+            className="w-full h-12 rounded-xl bg-slate-800 border border-slate-700 px-3 text-slate-200 outline-none">
+            {sweepTargets.map(t => <option key={t.id} value={t.id}>{t.emoji} {t.name}</option>)}
+          </select>
+        </div>
+      </Group>
+      <Group label="Danger zone">
+        <Row icon="🧨" title="Reset all data" sub="Wipes zones, balances & history" tone="text-rose-400" onClick={onReset} />
+      </Group>
+      <p className="text-center text-xs text-slate-600">
+        Stored locally · {(bytes / 1024).toFixed(1)} KB · {state.txs.length} transactions<br />
+        Tip: “Add to Home screen” to install as an app.
+      </p>
+    </div>
+  );
+}
+
+/* ============================== App ============================== */
+function App() {
+  const [state, setState] = useState(loadState);
+  const stateRef = useRef(state); stateRef.current = state;
+  const [tab, setTab] = useState('home');
+  const [modal, setModal] = useState(null);
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
+  const rolloverDismissed = useRef(false);
+
+  const [selected, setSelected] = useState(() => state.zones.find(z => z.kind === 'spending')?.id || state.zones[0]?.id || null);
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const [collapsed, setCollapsed] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
+
+  // Persist
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch (e) { showToast('⚠️ Could not save — storage full?', { tone: 'rose' }); }
+  }, [state]);
+  useEffect(() => { try { navigator.storage?.persist?.(); } catch (e) {} }, []);
+  useEffect(() => { if (selected && !state.zones.some(z => z.id === selected)) setSelected(state.zones[0]?.id || null); }, [state.zones, selected]);
+
+  const showToast = useCallback((msg, opts = {}) => {
+    const id = uid();
+    setToast({ id, msg, ...opts });
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(t => (t && t.id === id ? null : t)), opts.action ? 5500 : 2800);
+  }, []);
+  const undoBatch = (batch) => {
+    setState(s => undoTxs(s, s.txs.filter(t => t.batch === batch).map(t => t.id)));
+    setToast(null); haptic(12);
+    setTimeout(() => showToast('↩︎ Undone'), 50);
+  };
+  const undoAction = (batch) => ({ label: 'Undo', fn: () => undoBatch(batch) });
+
+  // Month change detection → rollover modal
+  useEffect(() => {
+    const check = () => {
+      const s = stateRef.current, cur = monthKey();
+      if (s.lastRolloverMonth === cur) return;
+      const hasLeft = s.zones.some(z => z.kind === 'spending' && z.balance > 0);
+      if (hasLeft) { if (!rolloverDismissed.current) setModal(m => m || { type: 'rollover', pending: true }); }
+      else setState(p => ({ ...p, lastRolloverMonth: cur }));
+    };
+    check();
+    const onVis = () => { if (document.visibilityState === 'visible') check(); };
+    document.addEventListener('visibilitychange', onVis);
+    const iv = setInterval(check, 60000);
+    return () => { document.removeEventListener('visibilitychange', onVis); clearInterval(iv); };
+  }, []);
+
+  const spentByZone = useMemo(() => {
+    const mk = monthKey(), m = {};
+    for (const t of state.txs) if (t.type === 'expense' && t.month === mk) m[t.from] = round2((m[t.from] || 0) + t.amount);
+    return m;
+  }, [state.txs]);
+
+  /* ---------- actions ---------- */
+  const doExpense = (zoneId, amt, memo, pre = []) => {
+    const batch = uid(); const z = state.zones.find(z => z.id === zoneId);
+    setState(record(state, [...pre.map(e => ({ ...e, batch })), { type: 'expense', amount: amt, from: zoneId, to: null, note: memo, batch }]));
+    setAmount(''); setNote(''); setModal(null); haptic(20);
+    showToast(`${z.emoji} −${fmt(amt)} from ${z.name}`, { action: undoAction(batch) });
+  };
+  const spend = () => {
+    const amt = round2(amount);
+    const z = state.zones.find(z => z.id === selected);
+    if (!z || !(amt > 0)) { haptic(40); setShakeKey(k => k + 1); if (!z) showToast('Pick a zone first'); return; }
+    if (round2(z.balance - amt) < 0) { haptic(30); setModal({ type: 'overdraft', zoneId: z.id, amount: amt, note: note.trim() }); return; }
+    doExpense(z.id, amt, note.trim());
+  };
+  const resolveOverdraft = (source, shortfall) => {
+    const { zoneId, amount: amt, note: memo } = modal;
+    const pre = source ? [{ type: source === POOL ? 'fund' : 'transfer', amount: shortfall, from: source, to: zoneId, note: 'Overdraft cover' }] : [];
+    doExpense(zoneId, amt, memo, pre);
+  };
+
+  const autoFund = () => {
+    haptic(15);
+    const batch = uid(); const r = fundEntries(state, batch);
+    if (!r.entries.length) { showToast(r.totalNeed > 0 ? 'Unallocated is empty — log income first' : 'All zones already funded ✓'); return; }
+    setState(record(state, r.entries));
+    showToast(`⚡ Funded ${r.entries.length} zone${r.entries.length > 1 ? 's' : ''} · ${fmt(r.funded)}${r.shortfall > 0 ? ` · ${fmt(r.shortfall)} short` : ''}`, { action: undoAction(batch) });
+  };
+
+  const addIncome = (amt, kind, memo, alsoFund) => {
+    const batch = uid();
+    let s = record(state, [{ type: 'income', amount: amt, from: null, to: POOL, note: memo || kind, category: kind, batch }]);
+    let msg = `💵 +${fmt(amt)} to Unallocated`;
+    if (alsoFund) { const r = fundEntries(s, batch); if (r.entries.length) { s = record(s, r.entries); msg += ` · funded ${r.entries.length} zone${r.entries.length > 1 ? 's' : ''}`; } }
+    setState(s); setModal(null); haptic(20);
+    showToast(msg, { action: undoAction(batch) });
+  };
+
+  const transfer = (from, to, amt) => {
+    const batch = uid();
+    setState(record(state, [{ type: 'transfer', amount: amt, from, to, batch }]));
+    setModal(null); showToast(`↔️ Moved ${fmt(amt)}`, { action: undoAction(batch) });
+  };
+
+  const sweep = (entries, alsoFund) => {
+    const batch = uid();
+    let s = record(state, entries.map(e => ({ ...e, batch })));
+    s = { ...s, lastRolloverMonth: monthKey() };
+    let funded = 0;
+    if (alsoFund) { const r = fundEntries(s, batch); s = record(s, r.entries); funded = r.entries.length; }
+    setState(s); setModal(null); haptic(25);
+    showToast(`🌙 Swept ${fmt(sum(entries, e => e.amount))}${funded ? ` · funded ${funded} zones` : ''}`, { action: undoAction(batch) });
+  };
+  const keepRollover = () => {
+    setState(s => ({ ...s, lastRolloverMonth: monthKey() }));
+    setModal(null); showToast('Balances carried into the new month');
+  };
+  const closeRollover = () => { rolloverDismissed.current = true; setModal(null); };
+
+  const saveZone = (data) => {
+    const editing = modal.zone;
+    if (editing) setState(s => ({ ...s, zones: s.zones.map(z => z.id === editing.id ? { ...z, ...data } : z) }));
+    else { const id = uid(); setState(s => ({ ...s, zones: [...s.zones, { id, balance: 0, ...data }] })); }
+    setModal(null); showToast(editing ? 'Zone updated' : `${data.emoji} ${data.name} created`);
+  };
+  const deleteZone = (zone) => setModal({
+    type: 'confirm', title: `Delete ${zone.name}?`, danger: true, confirmLabel: 'Delete zone',
+    body: zone.balance ? `Its balance of ${fmt(zone.balance)} will be returned to Unallocated. History is kept.` : 'History is kept.',
+    onConfirm: () => {
+      setState(s => {
+        const z = s.zones.find(x => x.id === zone.id); if (!z) return s;
+        let n = z.balance > 0 ? record(s, [{ type: 'close', amount: z.balance, from: z.id, to: POOL }])
+              : z.balance < 0 ? record(s, [{ type: 'close', amount: -z.balance, from: POOL, to: z.id }]) : s;
+        return { ...n, zones: n.zones.filter(x => x.id !== zone.id) };
+      });
+      setModal(null); showToast('Zone deleted');
+    },
+  });
+  const moveZone = (i, d) => setState(s => { const zs = [...s.zones]; const j = i + d; if (j < 0 || j >= zs.length) return s; [zs[i], zs[j]] = [zs[j], zs[i]]; return { ...s, zones: zs }; });
+
+  const askUndoTx = (t) => {
+    if (t.type === 'close') { showToast('Zone closures can’t be undone'); return; }
+    const m = txMeta(t, state.zones);
+    setModal({
+      type: 'confirm', title: 'Undo transaction?', confirmLabel: 'Undo & reverse balances', danger: true,
+      body: `${m.title} · ${fmt(t.amount)} on ${new Date(t.ts).toLocaleString('en-GB')}. Balances will be reversed as if it never happened.`,
+      onConfirm: () => { setState(s => undoTxs(s, [t.id])); setModal(null); showToast('↩︎ Transaction undone'); },
+    });
+  };
+
+  /* ---------- backup ---------- */
+  const backupPayload = () => JSON.stringify({ app: 'envelopes-lkr', version: 1, exportedAt: new Date().toISOString(), data: state }, null, 2);
+  const backupName = () => `envelopes-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  const markBackup = () => setState(s => ({ ...s, settings: { ...s.settings, lastBackup: Date.now() } }));
+  const exportJSON = () => {
+    const blob = new Blob([backupPayload()], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = backupName();
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    markBackup(); showToast('⬇️ Backup downloaded');
+  };
+  const shareJSON = async () => {
+    try {
+      const file = new File([backupPayload()], backupName(), { type: 'application/json' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file], title: 'Envelopes backup' });
+      else await navigator.share({ title: 'Envelopes backup', text: backupPayload() });
+      markBackup();
+    } catch (e) { if (e.name !== 'AbortError') showToast('Share failed — try Export'); }
+  };
+  const copyJSON = async () => {
+    try { await navigator.clipboard.writeText(backupPayload()); markBackup(); showToast('📋 Backup copied'); }
+    catch (e) { showToast('Clipboard blocked — use Export'); }
+  };
+  const restoreText = (text) => {
+    let data;
+    try { data = normalize(JSON.parse(text)); }
+    catch (e) { showToast('❌ Invalid backup file', { tone: 'rose' }); return; }
+    setModal({
+      type: 'confirm', title: 'Restore backup?', danger: true, confirmLabel: 'Replace my data',
+      body: `This replaces everything on this device with the backup: ${data.zones.length} zones, ${data.txs.length} transactions, Unallocated ${fmt(data.unallocated)}.`,
+      onConfirm: () => { rolloverDismissed.current = false; setState(data); setModal(null); setTab('home'); showToast('✅ Backup restored'); },
+    });
+  };
+  const resetAll = () => setModal({
+    type: 'confirm', title: 'Reset everything?', danger: true, confirmLabel: 'Erase all data',
+    body: 'All zones, balances and history will be deleted and replaced with starter zones. Export a backup first if unsure.',
+    onConfirm: () => { setState(defaultState()); setModal(null); setTab('home'); showToast('Fresh start 🌱'); },
+  });
+
+  const closeModal = useCallback(() => setModal(null), []);
+  const selectZone = (id) => { haptic(); setSelected(id); setCollapsed(false); };
+
+  const tabs = [['home', 'Home', Icons.home], ['history', 'History', Icons.history], ['zones', 'Zones', Icons.zones], ['settings', 'Settings', Icons.settings]];
+
+  return (
+    <div className="max-w-md mx-auto min-h-screen relative">
+      {tab === 'home' && (
+        <>
+          <HomeTab state={state} selected={selected} onSelectZone={selectZone} spentByZone={spentByZone} collapsed={collapsed}
+            onIncome={() => setModal({ type: 'income' })} onAutoFund={autoFund}
+            onRollover={() => { rolloverDismissed.current = false; setModal({ type: 'rollover', pending: state.lastRolloverMonth !== monthKey() }); }} />
+          {state.zones.length > 0 && (
+            <QuickExpense zones={state.zones} selected={selected} onSelect={setSelected} amount={amount} setAmount={setAmount}
+              note={note} setNote={setNote} onSpend={spend} collapsed={collapsed} setCollapsed={setCollapsed} shakeKey={shakeKey} />
+          )}
+        </>
+      )}
+      {tab === 'history' && <HistoryTab state={state} onUndo={askUndoTx} />}
+      {tab === 'zones' && <ZonesTab state={state} onEdit={(z) => setModal({ type: 'zone', zone: z })} onNew={() => setModal({ type: 'zone', zone: null })} onMove={moveZone} onTransfer={() => setModal({ type: 'transfer' })} />}
+      {tab === 'settings' && (
+        <SettingsTab state={state} onExport={exportJSON} onShare={shareJSON} onCopy={copyJSON}
+          onImportFile={async (f) => restoreText(await f.text())} onPaste={() => setModal({ type: 'paste' })}
+          onRollover={() => { rolloverDismissed.current = false; setModal({ type: 'rollover', pending: state.lastRolloverMonth !== monthKey() }); }}
+          onReset={resetAll} onSetSweep={(v) => setState(s => ({ ...s, settings: { ...s.settings, defaultSweepTarget: v } }))} />
+      )}
+
+      {/* Bottom nav */}
+      <nav className="fixed bottom-0 inset-x-0 z-40 flex justify-center bg-slate-950/95 backdrop-blur-xl border-t border-slate-800" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="w-full max-w-md grid grid-cols-4 h-16">
+          {tabs.map(([id, label, icon]) => (
+            <button key={id} onClick={() => { haptic(); setTab(id); }} className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition ${tab === id ? 'text-emerald-400' : 'text-slate-500 active:text-slate-300'}`}>
+              {icon}{label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* Modals */}
+      {modal?.type === 'income' && <IncomeSheet onAdd={addIncome} onClose={closeModal} />}
+      {modal?.type === 'overdraft' && <OverdraftSheet state={state} data={modal} onResolve={resolveOverdraft} onClose={closeModal} />}
+      {modal?.type === 'transfer' && <TransferSheet state={state} onMove={transfer} onClose={closeModal} />}
+      {modal?.type === 'zone' && <ZoneSheet zone={modal.zone} onSave={saveZone} onDelete={deleteZone} onClose={closeModal} />}
+      {modal?.type === 'rollover' && <RolloverSheet state={state} pending={modal.pending} onSweep={sweep} onKeep={keepRollover} onClose={closeRollover} />}
+      {modal?.type === 'paste' && <PasteSheet onRestore={restoreText} onClose={closeModal} />}
+      {modal?.type === 'confirm' && <ConfirmSheet {...modal} onClose={closeModal} />}
+
+      {/* Toast */}
+      {toast && (
+        <div key={toast.id} className="toast-pop fixed left-1/2 z-[60] w-[calc(100%-24px)] max-w-sm" style={{ top: 'max(env(safe-area-inset-top), 12px)', transform: 'translateX(-50%)' }}>
+          <div className={`flex items-center gap-3 rounded-2xl px-4 py-3 shadow-2xl border ${toast.tone === 'rose' ? 'bg-rose-950 border-rose-800' : 'bg-slate-800 border-slate-700'}`}>
+            <div className="flex-1 text-sm font-medium text-white">{toast.msg}</div>
+            {toast.action && <button onClick={toast.action.fn} className="shrink-0 h-9 px-3 rounded-xl bg-white/10 text-emerald-300 text-sm font-bold active:bg-white/20">{toast.action.label}</button>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
